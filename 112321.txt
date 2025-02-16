@@ -1,71 +1,386 @@
-Health.cs
+
+
+Player.cs
+
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
- 
-public class Health : MonoBehaviour
+
+public class Player : MonoBehaviour
 {
-    //Текущее здоровье игрока
-    public int currenthealth = 10;
-    //Максимальное здоровье игрока
-    public int maxHealth = 10;
-    //Компонент, отвечающий за проигрывание звуков
-    public AudioSource audioSource;
-    //Звуковой файл, содержащий звуковой эффект нанесения урона
-    public AudioClip damageSound;
-    //Метод, обрабатывающий нанесённый урон
-    public void TakeDamage(int damage)
+    public int points;
+    public Projectile projectilePrefab;
+    public float shootInterval;
+    public float shootTimer;
+    public Transform shootPoint;
+
+    void Update() 
     {
-        currenthealth -= damage;
- 
-        //Если здоровье ещё есть, то проигрывается звук нанесения урона
-        if (currenthealth > 0)
-        {
-            audioSource.PlayOneShot(damageSound);
-        }
-        //Если здоровья нет, то перезапускается текущая сцена
-        else
-        {
-            int sceneIndex = SceneManager.GetActiveScene().buildIndex;
-            SceneManager.LoadScene(sceneIndex);
-        }
+        Move();
+        shootTimer -= Time.deltaTime;
+        Shoot();
+
     }
+
+ 
+
+    void Shoot()
+
+    {
+
+        if(shootTimer <= 0)
+
+        {
+
+            Instantiate(projectilePrefab, shootPoint.position, Quaternion.identity);
+
+            shootTimer = shootInterval;
+
+        }
+
+    }
+
+ 
+
+    void Move()
+
+    {
+
+        if (Input.GetMouseButton(0))
+
+        {
+
+            Vector2 mousePos = Input.mousePosition;
+
+            Vector2 realPos = Camera.main.ScreenToWorldPoint(mousePos);
+
+            transform.position = realPos;
+
+        }
+
+    }
+
 }
 
-CoinsCounter.cs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Mover.cs
+
+
 using System.Collections;
+
 using System.Collections.Generic;
+
 using UnityEngine;
+
  
-public class CoinsCounter : MonoBehaviour
+
+public class Mover : MonoBehaviour
+
 {
-    //Число собранных монет
-    public int coins;
+
+    public float speed = 2f;
+
  
-    //Метод, увеличивающий число монеток
-    public void CollectCoins()
+
+    void Start()
+
     {
-        coins++;
+
+       Destroy(gameObject, 5f);
+
     }
-}
-FireballAttack.cs
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+
  
-public class FireballAttack : MonoBehaviour
-{
-    //Префаб огненного шара и параметр Transform точки атаки
-    public GameObject fireballPrefab;
-    public Transform attackPoint;
- 
+
     void Update()
+
     {
-        //Если игрок кликает левой кнопкой мыши, то создаётся огненный шар
-        if (Input.GetMouseButtonDown(0))
-        {
-            Instantiate(fireballPrefab, attackPoint.position, attackPoint.rotation);
-        }
+
+        transform.position = (Vector2)transform.position + Vector2.down * (speed + GameController.gameSpeed) * Time.deltaTime;
+
     }
+
+ 
+
+}
+
+
+Obstacle.cs
+
+
+using System.Collections;
+
+using System.Collections.Generic;
+
+using UnityEngine;
+
+ 
+
+public class Obstacle : MonoBehaviour
+
+{
+
+    private void OnTriggerEnter2D(Collider2D collision)
+
+    {
+
+        if(collision.tag == "Player")
+
+        {
+
+            Destroy(collision.gameObject);
+
+        }
+
+    }
+
+}
+
+
+Item.cs
+
+
+using System.Collections;
+
+using System.Collections.Generic;
+
+using UnityEngine;
+
+ 
+
+public class Item : MonoBehaviour
+
+{
+
+    private void OnTriggerEnter2D(Collider2D collision)
+
+    {
+
+        if (collision.tag == "Player")
+
+        {
+
+            Player player = collision.GetComponent<Player>();
+
+            player.points++;
+
+            Destroy(this.gameObject);
+
+        }
+
+    }
+
+}
+
+
+
+
+
+
+Projectile.cs
+
+
+using System.Collections;
+
+using System.Collections.Generic;
+
+using UnityEngine;
+
+ 
+
+public class Projectile : MonoBehaviour
+
+{
+
+    public float speed = 10f;
+
+ 
+
+    void Start()
+
+    {
+
+        Destroy(gameObject, 1f);
+
+    }
+
+ 
+
+    void Update()
+
+    {
+
+        transform.position = (Vector2)transform.position + Vector2.up * speed * Time.deltaTime;
+
+    }
+
+ 
+
+    private void OnTriggerEnter2D(Collider2D collision)
+
+    {
+
+        if (collision.tag == "Obstacle")
+
+        {
+
+            Destroy(collision.gameObject);
+
+            Destroy(gameObject);
+
+        }
+
+    }
+
+}
+
+ 
+
+
+GameController.cs
+
+
+using System.Collections;
+
+using System.Collections.Generic;
+
+using UnityEngine;
+
+ 
+
+public class GameController : MonoBehaviour
+
+{
+
+    public static float gameSpeed;
+
+ 
+
+    [Range(0, 5)]
+
+    public float gameSpeedRegulator;
+
+    public float speedRate = 0.5f;
+
+    public float gameSpeedMax = 5;
+
+ 
+
+    void Update()
+
+    {
+
+        if (gameSpeedRegulator <= gameSpeedMax)
+
+        {
+
+            gameSpeedRegulator += speedRate * Time.deltaTime;
+
+        }
+
+        gameSpeed = gameSpeedRegulator;
+
+    }
+
+}
+
+
+ 
+
+ 
+
+
+
+
+
+
+Spawner.cs
+
+
+using System.Collections;
+
+using System.Collections.Generic;
+
+using UnityEngine;
+
+ 
+
+public class Spawner : MonoBehaviour
+
+{
+
+    public GameObject prefab;
+
+ 
+
+    public Transform borderRight;
+
+    public Transform borderLeft;
+
+ 
+
+    public float spawnInterval;
+
+    public float spawnTimer;
+
+ 
+
+ 
+
+    void Update()
+
+    {
+
+        spawnTimer -= Time.deltaTime;
+
+ 
+
+        if(spawnTimer <= 0)
+
+        {
+
+            Spawn();
+
+        }
+
+    }
+
+ 
+
+    void Spawn() {
+
+ 
+
+        float randomX = Random.Range(borderLeft.position.x, borderRight.position.x);
+
+ 
+
+        Vector2 newPosition = transform.position;
+
+        newPosition.x = randomX;
+
+ 
+
+        Instantiate(prefab, newPosition, Quaternion.identity);
+
+        spawnTimer = spawnInterval;
+
+    }
+
+ 
+
 }
